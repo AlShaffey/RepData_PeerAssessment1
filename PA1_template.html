@@ -404,6 +404,7 @@ max_average_interval &lt;- unique(filtered_max_steps$interval)</code></pre>
 <pre class="r"><code>missing_values &lt;- filter(activities, is.na(steps)) 
 total_missing_values &lt;- count(missing_values)</code></pre>
 <p>The total number of missing values in the data set is 2304</p>
+<p>The interval average steps will be used to impute missing interval steps.</p>
 <pre class="r"><code>imputed &lt;- left_join(missing_values, summarized_interval_average, by = &quot;interval&quot;)
 imputed_join_columns &lt;- select(imputed, date, interval, average_steps)
 imputed_activities &lt;-

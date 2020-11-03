@@ -57,6 +57,8 @@ missing_values <- filter(activities, is.na(steps))
 total_missing_values <- count(missing_values)
 ```
 The total number of missing values in the data set is `r total_missing_values`
+
+The interval average steps will be used to impute missing interval steps.
 ```{r imputing-missing_values}
 imputed <- left_join(missing_values, summarized_interval_average, by = "interval")
 imputed_join_columns <- select(imputed, date, interval, average_steps)
