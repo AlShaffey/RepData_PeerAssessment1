@@ -7,7 +7,7 @@ keep_md: true
 
 This is to remove the messages all over the document.
 ```{r setup}
-knitr::opts_chunk$set(message = F)
+knitr::opts_chunk$set(message = F, warning = F)
 ```
 
 
@@ -74,6 +74,16 @@ qplot(summarized_imputed_steps$total_steps, geom="histogram", xlab="Daily impute
 imputed_total_mean <- mean(summarized_imputed_steps$total_steps)
 imputed_total_median <- median(summarized_imputed_steps$total_steps)
 ```
-The mean of the total number of steps taken per day after imputation is `r imputed_total_mean` and before imputation was `r daily_total_mean` and the median is `r imputed_total_median` and before imputation was `r daily_total_median`, which indicates almost no change in the reported measures, where mean is slightly increased but median didn't change at all, so, one can say that imputing the missing values didn't impact the original estimates of the todal daily number of steps.
+The mean of the total number of steps taken per day after imputation is `r imputed_total_mean` and before imputation was `r daily_total_mean` and the median is `r imputed_total_median` and before imputation was `r daily_total_median`, which indicates almost no change in the reported measures, where mean is slightly increased but median didn't change at all, so, one can say that imputing the missing values didn't impact the original estimates of the total daily number of steps.
 
 ## Are there differences in activity patterns between weekdays and weekends?
+
+```{r activity_patterns}
+library(chron)
+day_type_unified <- mutate(mutated_imputed_unified, day_type = factor( ifelse(is.weekend(date), "weekend", "weekday")))
+
+unified_grouped_intervals <- group_by(day_type_unified, day_type, interval)
+summarized_unified_average <- summarise(unified_grouped_intervals, average_steps = mean(imputed_steps))
+
+qplot(interval, average_steps, data = summarized_unified_average, geom="path", ylab="Average steps", facets = "day_type")
+```
