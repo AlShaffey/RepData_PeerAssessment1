@@ -15,20 +15,18 @@ knitr::opts_chunk$set(message = F, warning = F)
 ```{r loading_reprocessing}
 library(readr)
 activities <- read_csv("activity.zip", col_types = cols())
-
-library(dplyr, quietly = TRUE)
-mutated <- mutate(activities, clean_steps = ifelse(is.na(steps), 0, steps))
-mutated
 ```
 
 
 ## What is mean total number of steps taken per day?
 ```{r statistics_per_day}
-grouped_dates <- group_by(mutated, date)
-summarized_daily_steps <- summarise(grouped_dates, total_steps = max(clean_steps))
+library(dplyr, quietly = TRUE)
+filtered <- filter(activities, !is.na(steps))
+grouped_dates <- group_by(filtered, date)
+summarized_daily_steps <- summarise(grouped_dates, total_steps = sum(steps))
 
 library(ggplot2)
-qplot(summarized_daily_steps$total_steps, geom="histogram", xlab="Daily total steps") 
+qplot(summarized_daily_steps$total_steps, geom="histogram", xlab="Daily total steps")
 daily_total_mean <- mean(summarized_daily_steps$total_steps)
 daily_total_median <- median(summarized_daily_steps$total_steps)
 ```
@@ -39,8 +37,8 @@ The mean of the total number of steps taken per day is `r daily_total_mean` and 
 
 
 ```{r average_interval_steps}
-grouped_intervals <- group_by(mutated, interval)
-summarized_interval_average <- summarise(grouped_intervals, average_steps = mean(clean_steps))
+grouped_intervals <- group_by(filtered, interval)
+summarized_interval_average <- summarise(grouped_intervals, average_steps = mean(steps))
 
 qplot(interval, average_steps, data = summarized_interval_average, geom="path", ylab="Average steps") 
 
@@ -55,32 +53,31 @@ The 5-minute interval, on average across all the days in the data set, contains 
 
 
 ```{r missing_total_number }
-missing_values <- filter(mutated, is.na(steps)) 
+missing_values <- filter(activities, is.na(steps)) 
 total_missing_values <- count(missing_values)
 ```
 The total number of missing values in the data set is `r total_missing_values`
 ```{r imputing-missing_values}
 imputed <- left_join(missing_values, summarized_interval_average, by = "interval")
 imputed_join_columns <- select(imputed, date, interval, average_steps)
-mutated_imputed <- 
-  left_join(mutated, imputed_join_columns, by = c("date", "interval"))
-mutated_imputed_unified <- mutate(mutated_imputed, imputed_steps = ifelse(is.na(steps), average_steps, steps))
+imputed_activities <-
+  left_join(activities, imputed_join_columns, by = c("date", "interval"))
+imputed_unified <- mutate(imputed_activities, imputed_steps = ifelse(is.na(steps), average_steps, steps))
 
-grouped_imputed_dates <- group_by(mutated_imputed_unified, date)
-summarized_imputed_steps <- summarise(grouped_imputed_dates, total_steps = max(imputed_steps))
+grouped_imputed_dates <- group_by(imputed_unified, date)
+summarized_imputed_steps <- summarise(grouped_imputed_dates, total_steps = sum(imputed_steps))
 
-library(ggplot2)
-qplot(summarized_imputed_steps$total_steps, geom="histogram", xlab="Daily imputed total steps") 
+qplot(summarized_imputed_steps$total_steps, geom="histogram", xlab="Daily imputed total steps")
 imputed_total_mean <- mean(summarized_imputed_steps$total_steps)
 imputed_total_median <- median(summarized_imputed_steps$total_steps)
 ```
-The mean of the total number of steps taken per day after imputation is `r imputed_total_mean` and before imputation was `r daily_total_mean` and the median is `r imputed_total_median` and before imputation was `r daily_total_median`, which indicates almost no change in the reported measures, where mean is slightly increased but median didn't change at all, so, one can say that imputing the missing values didn't impact the original estimates of the total daily number of steps.
+The mean of the total number of steps taken per day after imputation is `r imputed_total_mean` and before imputation was `r daily_total_mean` and the median is `r imputed_total_median` and before imputation was `r daily_total_median`, which indicates almost no change in the reported measures, where mean didn't change at all but median slightly increased, more interestingly, the median after imputation is exactly the same as the mean, so, one can say that imputing the missing values didn't impact the original estimates of the total daily number of steps.
 
 ## Are there differences in activity patterns between weekdays and weekends?
 
 ```{r activity_patterns}
 library(chron)
-day_type_unified <- mutate(mutated_imputed_unified, day_type = factor( ifelse(is.weekend(date), "weekend", "weekday")))
+day_type_unified <- mutate(imputed_unified, day_type = factor( ifelse(is.weekend(date), "weekend", "weekday")))
 
 unified_grouped_intervals <- group_by(day_type_unified, day_type, interval)
 summarized_unified_average <- summarise(unified_grouped_intervals, average_steps = mean(imputed_steps))
